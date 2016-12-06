@@ -17,29 +17,21 @@ if test "$PHP_FFMPEG" != "no"; then
   dnl look for ffmpeg headers. Prepend this directory to the default dirs so it
   dnl gets checked first.
   if test "$PHP_FFMPEG" != "yes"; then
-      INC_CHECK_DIRS="$PHP_FFMPEG $INC_CHECK_DIRS"
+      INC_CHECK_DIRS="$PHP_FFMPEG"
   fi
 
   AC_MSG_CHECKING(for ffmpeg headers)
   for i in $INC_CHECK_DIRS ; do
-    if test -f $i/include/ffmpeg/avcodec.h; then
-      PHP_ADD_INCLUDE($i/include/ffmpeg)
-      FFMPEG_INC_FOUND=$i/include/ffmpeg
-      break
-    elif test -f $i/include/avcodec.h; then
-      PHP_ADD_INCLUDE($i/include)
-      FFMPEG_INC_FOUND=$i/include
-      break
-    elif test -f $i/include/libavcodec/avcodec.h; then
+	if test -f $i/include/libavcodec/avcodec.h; then
       dnl ffmpeg svn revision 12194 and newer put each header in its own dir
       dnl so we have to include them all.
-      PHP_ADD_INCLUDE($i/include/libavcodec/)
-      PHP_ADD_INCLUDE($i/include/libavformat/)
-      PHP_ADD_INCLUDE($i/include/libavutil/)
-      PHP_ADD_INCLUDE($i/include/libswscale/)
-      PHP_ADD_INCLUDE($i/include/libavfilter/)
-      PHP_ADD_INCLUDE($i/include/libavdevice/)
-      FFMPEG_INC_FOUND=$i/include/libavcodec
+dnl      PHP_ADD_INCLUDE($i/include/libavcodec/)
+dnl      PHP_ADD_INCLUDE($i/include/libavformat/)
+dnl      PHP_ADD_INCLUDE($i/include/libavutil/)
+dnl      PHP_ADD_INCLUDE($i/include/libswscale/)
+dnl      PHP_ADD_INCLUDE($i/include/libavfilter/)
+dnl      PHP_ADD_INCLUDE($i/include/libavdevice/)
+		FFMPEG_INC_FOUND=$i/include
       break
     fi
   done
@@ -105,7 +97,7 @@ if test "$PHP_FFMPEG" != "no"; then
 
   CFLAGS="$CFLAGS -Wall -fno-strict-aliasing"
 
-  PHP_NEW_EXTENSION(ffmpeg, ffmpeg-php.c ffmpeg_movie.c ffmpeg_frame.c ffmpeg_errorhandler.c ffmpeg_tools.c, $ext_shared,, \\$(GDLIB_CFLAGS))
+  PHP_NEW_EXTENSION(ffmpeg, ffmpeg-php.c ffmpeg_movie.c ffmpeg_frame.c ffmpeg_errorhandler.c ffmpeg_tools.c, $ext_shared)
   PHP_ADD_EXTENSION_DEP(ffmpeg, gd)
 
   PHP_SUBST(FFMPEG_SHARED_LIBADD)

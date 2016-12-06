@@ -29,21 +29,20 @@
 
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "php.h"
 #include "php_ini.h"
 #include "php_globals.h"
 #include "ext/standard/info.h"
 
 #include <libavcodec/avcodec.h>
+#include <libavcodec/version.h>
 #include <libavformat/avformat.h>
-
-#if LIBAVFORMAT_VERSION_INT > AV_VERSION_INT(52, 31, 0)
+#include <libavutil/pixfmt.h>
 #include <libavutil/pixdesc.h>
-#endif
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include "php_ffmpeg.h"
 
@@ -333,7 +332,7 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, __construct)
     } 
 
     if (persistent) {
-        list_entry *le;
+        zend_rsrc_list_entry *le;
         /* resolve the fully-qualified path name to use as the hash key */
         fullpath = expand_filepath(filename, NULL TSRMLS_CC);
 
@@ -368,7 +367,7 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, __construct)
             }
             
         } else { /* no existing persistant movie, create one */
-            list_entry new_le;
+            zend_rsrc_list_entry new_le;
             ffmovie_ctx = _php_alloc_ffmovie_ctx(1);
 
             if (_php_open_movie_file(ffmovie_ctx, filename)) {
@@ -382,7 +381,7 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, __construct)
             new_le.ptr = ffmovie_ctx;
 
             if (FAILURE == zend_hash_update(&EG(persistent_list), hashkey, 
-                        hashkey_length+1, (void *)&new_le, sizeof(list_entry),
+                        hashkey_length+1, (void *)&new_le, sizeof(zend_rsrc_list_entry),
                         NULL)) {
                 php_error_docref(NULL TSRMLS_CC, E_WARNING, 
                         "Failed to register persistent resource");
@@ -1098,12 +1097,14 @@ static const char* _php_get_codec_name(ff_movie_context *ffmovie_ctx, int type)
     /* Copied from libavcodec/utils.c::avcodec_string */
     if (p) {
         codec_name = p->name;
+#ifdef FF_API_SUB_ID
         if (decoder_ctx->codec_id == CODEC_ID_MP3) {
             if (decoder_ctx->sub_id == 2)
                 codec_name = "mp2";
             else if (decoder_ctx->sub_id == 1)
                 codec_name = "mp1";
         }
+#endif
     } else if (decoder_ctx->codec_id == CODEC_ID_MPEG2TS) {
         /* fake mpeg2 transport stream codec (currently not registered) */
         codec_name = "mpeg2ts";

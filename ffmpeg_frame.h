@@ -36,14 +36,15 @@
 #ifndef FFMPEG_FRAME_H
 #define FFMPEG_FRAME_H
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "php_version.h"
 
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <libavutil/avutil.h>
 
 /* object can't be created from user space so no PHP constructor */
 //FFMPEG_PHP_METHOD(ffmpeg_frame, __construct);
