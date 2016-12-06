@@ -1105,7 +1105,7 @@ static const char* _php_get_codec_name(ff_movie_context *ffmovie_ctx, int type)
                 codec_name = "mp1";
         }
 #endif
-    } else if (decoder_ctx->codec_id == CODEC_ID_MPEG2TS) {
+    } else if (decoder_ctx->codec_id == AV_CODEC_ID_MPEG2TS) {
         /* fake mpeg2 transport stream codec (currently not registered) */
         codec_name = "mpeg2ts";
     } else if (decoder_ctx->codec_name[0] != '\0') {
@@ -1358,7 +1358,11 @@ static AVFrame* _php_read_av_frame(ff_movie_context *ffmovie_ctx,
         return NULL;
     }
 
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55, 45, 101)
+    frame = av_frame_alloc();
+#else
     frame = avcodec_alloc_frame();
+#endif
 
     /* read next frame */ 
     while (av_read_frame(ffmovie_ctx->fmt_ctx, &packet) >= 0) {
@@ -1376,13 +1380,13 @@ static AVFrame* _php_read_av_frame(ff_movie_context *ffmovie_ctx,
             if (got_frame) {
                 *is_keyframe = (packet.flags & AV_PKT_FLAG_KEY);
                 *pts = packet.pts;
-                av_free_packet(&packet);
+				av_packet_unref(&packet);
                 return frame;
             }
         }
 
         /* free the packet allocated by av_read_frame */
-        av_free_packet(&packet);
+        av_packet_unref(&packet);
     }
 
     av_free(frame);
@@ -1502,7 +1506,13 @@ static int _php_get_ff_frame(ff_movie_context *ffmovie_ctx,
         ff_frame->keyframe = is_keyframe;
         ff_frame->pts = pts;
         
-        ff_frame->av_frame = avcodec_alloc_frame();
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55, 45, 101)
+    	ff_frame->av_frame = av_frame_alloc();
+#else
+    	ff_frame->av_frame = avcodec_alloc_frame();
+#endif
+
+
         avpicture_alloc((AVPicture*)ff_frame->av_frame, ff_frame->pixel_format,
             ff_frame->width, ff_frame->height);
  

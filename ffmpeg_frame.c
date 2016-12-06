@@ -202,7 +202,13 @@ int _php_convert_frame(ff_frame_context *ff_frame_ctx, int dst_fmt) {
 
     src_frame = ff_frame_ctx->av_frame;
 
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55, 45, 101)
+    dst_frame = av_frame_alloc();
+#else
     dst_frame = avcodec_alloc_frame();
+#endif
+
+
     avpicture_alloc((AVPicture*)dst_frame, dst_fmt, ff_frame_ctx->width,
             ff_frame_ctx->height);
 
@@ -420,7 +426,11 @@ FFMPEG_PHP_METHOD(ffmpeg_frame, ffmpeg_frame)
             height = gdImageSY(gd_img);
 
             /* create a an av_frame and allocate space for it */
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55, 45, 101)
+            frame = av_frame_alloc();
+#else
             frame = avcodec_alloc_frame();
+#endif
             avpicture_alloc((AVPicture*)frame, PIX_FMT_RGBA32, width, height);
 
             /* copy the gd image to the av_frame */
