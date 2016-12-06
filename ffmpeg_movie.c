@@ -534,6 +534,12 @@ static AVCodecContext* _php_get_decoder_context(ff_movie_context *ffmovie_ctx,
         ffmovie_ctx->codec_ctx[stream_index] = 
             GET_CODEC_PTR(ffmovie_ctx->fmt_ctx->streams[stream_index]->codec);
 
+		/* Disable Threading */
+
+		if (ffmovie_ctx->codec_ctx[stream_index]) {
+			ffmovie_ctx->codec_ctx[stream_index]->thread_count = INI_INT("ffmpeg.threads");
+		}
+
        /* open the decoder */
 
 #if LIBAVFORMAT_VERSION_INT > AV_VERSION_INT(52, 31, 0)

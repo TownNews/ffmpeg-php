@@ -83,6 +83,8 @@ extern void ffmpeg_errorhandler(void *ptr, int level, const char *msg, va_list a
 PHP_INI_BEGIN()
     PHP_INI_ENTRY("ffmpeg.allow_persistent", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("ffmpeg.show_warnings", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("ffmpeg.max_alloc", "0", PHP_INI_SYSTEM, NULL)
+	PHP_INI_ENTRY("ffmpeg.threads", "1", PHP_INI_SYSTEM, NULL)
 PHP_INI_END()
 
 
@@ -98,6 +100,10 @@ PHP_MINIT_FUNCTION(ffmpeg)
     if (INI_BOOL("ffmpeg.show_warnings")) {
         av_log_set_callback(ffmpeg_errorhandler);
     } 
+
+	if (INI_BOOL("ffmpeg.max_alloc")) {
+		av_max_alloc(INI_INT("ffmpeg.max_alloc"));
+	}
    
     register_ffmpeg_movie_class(module_number);
     register_ffmpeg_frame_class(module_number);
