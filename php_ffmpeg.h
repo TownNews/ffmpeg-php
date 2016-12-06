@@ -38,7 +38,6 @@
 
 #include "php_version.h"
 
-
 /* 
  * PHP-4 doesn't have the METHOD, ME and MALIAS macros so map them back
  * to the function macros for PHP-4
@@ -86,7 +85,6 @@ PHP_MINFO_FUNCTION(ffmpeg);
 #endif
 
 #endif	/* PHP_FFMPEG_H */
-
 
 /*
  * Local variables:

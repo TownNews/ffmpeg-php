@@ -36,7 +36,7 @@
 #ifndef FFMPEG_TOOLS_H
 #define FFMPEG_TOOLS_H
 
-#include <avcodec.h>
+#include <libavcodec/avcodec.h>
 
 int ffmpeg_img_convert(
         AVPicture *dst, int dst_pix_fmt,

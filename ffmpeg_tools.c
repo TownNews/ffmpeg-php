@@ -42,7 +42,7 @@
 #include "ffmpeg_tools.h"
 
 #ifdef HAVE_SWSCALER
-#include <swscale.h>
+#include <libswscale/swscale.h>
 #endif
 
 /* {{{ ffmpeg_img_convert() 

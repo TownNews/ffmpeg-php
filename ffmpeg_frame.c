@@ -55,6 +55,10 @@
 #if HAVE_LIBGD20
 #include "gd.h" 
 
+#ifndef PIX_FMT_RGBA32
+#define PIX_FMT_RGBA32 PIX_FMT_RGB32
+#endif
+
 #define FFMPEG_PHP_FETCH_IMAGE_RESOURCE(gd_img, ret) { \
     ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd"); \
     ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, ret, -1, "Image", le_gd); \
@@ -284,15 +288,14 @@ static int _php_avframe_to_gd_image(AVFrame *frame, gdImage *dest, int width,
     int x, y;
     int *src = (int*)frame->data[0];
 
+	if(width > dest->sx || height > dest->sy){
+		return -1;
+	}
+
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-		
-			if (gdImageBoundsSafeMacro(dest, x, y)) {
-                /* copy pixel to gdimage buffer zeroing the alpha channel */
-                dest->tpixels[y][x] = src[x] & 0x00ffffff;
-            } else {
-                return -1;
-            }
+            /* copy pixel to gdimage buffer zeroing the alpha channel */
+			dest->tpixels[y][x] = src[x] & 0x00ffffff;
         }
         src += width;
     }

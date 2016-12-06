@@ -38,8 +38,8 @@
 
 #include "php_version.h"
 
-#include <avcodec.h>
-#include <avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
