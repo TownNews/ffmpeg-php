@@ -1,8 +1,8 @@
 REQUIREMENTS
 ============
 
-ffmpeg-0.4.9pre1 or higher built with the --enable-shared option and without the --enable-swscale option (ffmpeg svn recommended)
-php-5.0.x or higher. For php-4.x.x, use ffmpeg-php-0.5.1 or older.
+ffmpeg-1.24 or lower built with the --enable-shared option and without the --enable-swscale option (ffmpeg svn recommended)
+php-5.4.x or higher.
 gd-2.0.x or higher or the version of GD bundled with PHP
 
 INSTALLATION INSTRUCTIONS

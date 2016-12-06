@@ -1,5 +1,17 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
+version 0.7.0 (09/22/2014)
+	New Features:
+	* Support for new INI directive: ffmpeg.max_alloc=<bytes> to set a
+	  memory cap on the usage of FFMPEG
+	* Support for new INI directive: ffmpeg.threads=<threads> to set the
+	  maximum number of threads that can be used by FFMPEG
+	* Made compatible with PHP 5.4
+	* Made compatible with FFMPEG 1.2.4
+
+	Bug Fixes:
+	* Fixed issue with config.m4 and alternate libdir
+
 version 0.6.0 (10/15/2008)
     New Features:
     * Support for ffmpeg swscale API
