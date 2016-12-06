@@ -74,7 +74,7 @@ int ffmpeg_img_convert(AVPicture *dst, int dst_pix_fmt,
     }
 
     result = sws_scale(sws_ctx, 
-            src->data, src->linesize,
+            (const uint8_t* const*)src->data, src->linesize,
             0, src_height,
             dst->data, dst->linesize);
 

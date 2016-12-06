@@ -55,6 +55,10 @@
 #if HAVE_LIBGD20
 #include "gd.h" 
 
+#ifndef PIX_FMT_RGB32
+#define PIX_FMT_RGB32 AV_PIX_FMT_RGB32
+#endif
+
 #ifndef PIX_FMT_RGBA32
 #define PIX_FMT_RGBA32 PIX_FMT_RGB32
 #endif
