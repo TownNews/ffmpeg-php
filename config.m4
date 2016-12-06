@@ -48,6 +48,7 @@ dnl      PHP_ADD_INCLUDE($i/include/libavdevice/)
   for i in $PHP_FFMPEG /usr/local /usr ; do
     if test -f $i/lib/libavcodec.so; then
       FFMPEG_LIBDIR=$i/lib
+      break
     fi
     dnl PATCH: 1785450 x86_64 support (Bent Nagstrup Terp)
     if test -f $i/lib64/libavcodec.so; then
