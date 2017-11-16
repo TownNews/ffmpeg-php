@@ -1,5 +1,10 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
+version 0.8.0 (11/16/2017)
+   Changes:
+   * Modified to compile and work with FFMPEG 3.4.0 (#1)
+   * Updated README documentation
+
 version 0.7.0 (09/22/2014)
 	New Features:
 	* Support for new INI directive: ffmpeg.max_alloc=<bytes> to set a

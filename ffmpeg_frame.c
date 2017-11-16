@@ -55,14 +55,6 @@
 #if HAVE_LIBGD20
 #include "gd.h" 
 
-#ifndef PIX_FMT_RGB32
-#define PIX_FMT_RGB32 AV_PIX_FMT_RGB32
-#endif
-
-#ifndef PIX_FMT_RGBA32
-#define PIX_FMT_RGBA32 PIX_FMT_RGB32
-#endif
-
 #define FFMPEG_PHP_FETCH_IMAGE_RESOURCE(gd_img, ret) { \
     ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd"); \
     ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, ret, -1, "Image", le_gd); \
@@ -346,7 +338,7 @@ FFMPEG_PHP_METHOD(ffmpeg_frame, toGDImage)
 
     GET_FRAME_RESOURCE(getThis(), ff_frame);
 
-    _php_convert_frame(ff_frame, PIX_FMT_RGBA32);
+    _php_convert_frame(ff_frame, AV_PIX_FMT_RGB32);
 
     return_value->value.lval = _php_get_gd_image(ff_frame->width, 
             ff_frame->height);
@@ -435,7 +427,7 @@ FFMPEG_PHP_METHOD(ffmpeg_frame, ffmpeg_frame)
 #else
             frame = avcodec_alloc_frame();
 #endif
-            avpicture_alloc((AVPicture*)frame, PIX_FMT_RGBA32, width, height);
+            avpicture_alloc((AVPicture*)frame, AV_PIX_FMT_RGB32, width, height);
 
             /* copy the gd image to the av_frame */
             _php_gd_image_to_avframe(gd_img, frame, width, height);
@@ -446,7 +438,7 @@ FFMPEG_PHP_METHOD(ffmpeg_frame, ffmpeg_frame)
             /* set the ffpmeg_frame's properties */
             ff_frame->width = width;
             ff_frame->height = height;
-            ff_frame->pixel_format = PIX_FMT_RGBA32;
+            ff_frame->pixel_format = AV_PIX_FMT_RGB32;
             break;
         default:
             zend_error(E_ERROR, "Invalid argument\n");
