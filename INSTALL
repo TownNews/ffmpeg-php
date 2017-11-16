@@ -1,8 +1,8 @@
 REQUIREMENTS
 ============
 
-ffmpeg-1.24 or lower built with the --enable-shared option and without the --enable-swscale option (ffmpeg svn recommended)
-php-5.4.x or higher.
+ffmpeg-3.4.0 or higher built with the --enable-shared option and without the --enable-swscale option (ffmpeg svn recommended)
+php-5.6.x or higher.
 gd-2.0.x or higher or the version of GD bundled with PHP
 
 INSTALLATION INSTRUCTIONS
@@ -29,7 +29,7 @@ BUILDING FFMPEG-PHP AS A SHARED EXTENSION
 
 2. Unpack the archive
 
-        tar -xjf ffmpeg-php.X.x.x.tbz2 -C /path/to/php_sources/ext/
+        tar -xzf ffmpeg-php.X.x.x.tar.gz -C /path/to/php_sources/ext/
 
 3. cd into the ffmpeg extension directory
 
