@@ -72,6 +72,8 @@ ff_frame_context* _php_create_ffmpeg_frame(INTERNAL_FUNCTION_PARAMETERS);
 
 int _php_convert_frame(ff_frame_context *ff_frame, int new_fmt);
 
+#if PHP_MAJOR_VERSION < 7
+
 #define GET_FRAME_RESOURCE(ffmpeg_frame_object, ffmpeg_frame) {\
 	zval **_tmp_zval;\
     if (zend_hash_find(Z_OBJPROP_P(ffmpeg_frame_object), "ffmpeg_frame",\
@@ -83,6 +85,22 @@ int _php_convert_frame(ff_frame_context *ff_frame, int new_fmt);
     ZEND_FETCH_RESOURCE(ffmpeg_frame, ff_frame_context*, _tmp_zval, -1,\
             "ffmpeg_frame", le_ffmpeg_frame);\
 }\
+
+#else
+
+#define GET_FRAME_RESOURCE(ffmpeg_frame_object, ffmpeg_frame) {\
+    zend_resource *le;\
+    if ((le = zend_hash_str_find_ptr(Z_OBJPROP_P(ffmpeg_frame_object), "ffmpeg_frame",\
+                sizeof("ffmpeg_frame") - 1)) == NULL) {\
+        zend_error(E_WARNING, "Unable to locate ffmpeg_frame resource in this object.");\
+        RETURN_FALSE;\
+    }\
+\
+    ffmpeg_frame = le->ptr; \
+}\
+
+
+#endif
 
 #endif // FFMPEG_FRAME_H
 
