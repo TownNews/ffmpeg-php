@@ -8,4 +8,4 @@ $mov = new ffmpeg_movie(dirname(__FILE__) . '/test_media/robot.avi');
 printf("ffmpeg getFrameCount(): %d\n", $mov->getFrameCount());
 ?>
 --EXPECT--
-ffmpeg getFrameCount(): 240
+ffmpeg getFrameCount(): 241

@@ -704,6 +704,10 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getAuthor)
 
 #if LIBAVFORMAT_VERSION_INT > AV_VERSION_INT(52, 31, 0)
     entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "author", NULL, 0);
+	if (!entry) {
+	    entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "artist", NULL, 0);
+	}
+
     if (entry) {
 	    FFMPEG_RETURN_STRINGL(entry->value, strlen(entry->value), 1);
     } else {
@@ -845,7 +849,11 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getYear)
 
 #if LIBAVFORMAT_VERSION_INT > AV_VERSION_INT(52, 31, 0)
     entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "year", NULL, 0);
-    if (entry) {
+	if (!entry) {
+	    entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "date", NULL, 0);
+	}
+
+    if (entry && (strlen(entry->value) <= 4)) {
 	RETURN_LONG(atol(entry->value));
     } else {
 	RETURN_NULL();

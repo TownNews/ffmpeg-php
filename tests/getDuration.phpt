@@ -8,4 +8,4 @@ $mov = new ffmpeg_movie(dirname(__FILE__) . '/test_media/robot.avi');
 printf("ffmpeg getDuration(): %0.2f\n", $mov->getDuration());
 ?>
 --EXPECT--
-ffmpeg getDuration(): 9.60 
+ffmpeg getDuration(): 9.64
