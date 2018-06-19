@@ -53,18 +53,28 @@
    allow ffmpeg-php to be built without access to the php sources
  */
 #if HAVE_LIBGD20
-#include "gd.h" 
+#include "gd.h"
+#include "ext/gd/php_gd.h"
+
+#if PHP_MAJOR_VERSION < 7
 
 #define FFMPEG_PHP_FETCH_IMAGE_RESOURCE(gd_img, ret) { \
-    ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd"); \
-    ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, ret, -1, "Image", le_gd); \
+    ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, ret, -1, "Image", phpi_get_le_gd()); \
 }
+
+#else
+
+#define FFMPEG_PHP_FETCH_IMAGE_RESOURCE(gd_img, ret) { \
+	if ((gd_img = (gdImagePtr)zend_fetch_resource(Z_RES_P(ret), "Image", phpi_get_le_gd())) == NULL) {\
+		RETURN_FALSE;\
+	}\
+}
+#endif
+
+
 
 // Borrowed from gd.c
 #define gdImageBoundsSafeMacro(im, x, y) (!((((y) < (im)->cy1) || ((y) > (im)->cy2)) || (((x) < (im)->cx1) || ((x) > (im)->cx2))))
-
-static int le_gd; // this is only valid after calling 
-                  // FFMPEG_PHP_FETCH_IMAGE_RESOURCE() 
 
 #endif // HAVE_LIBGD20
 
@@ -126,15 +136,20 @@ static ff_frame_context* _php_alloc_ff_frame()
  */
 ff_frame_context* _php_create_ffmpeg_frame(INTERNAL_FUNCTION_PARAMETERS)
 {
+#if PHP_MAJOR_VERSION < 7
     int ret;
+#else
+    FFMPEG_RESOURCE *ret;
+#endif
+
 	ff_frame_context *ff_frame;
     
     ff_frame = _php_alloc_ff_frame();
     
-	ret = ZEND_REGISTER_RESOURCE(NULL, ff_frame, le_ffmpeg_frame);
-    
+    ret = FFMPEG_REGISTER_RESOURCE(NULL, ff_frame, le_ffmpeg_frame);
     object_init_ex(return_value, ffmpeg_frame_class_entry_ptr);
     add_property_resource(return_value, "ffmpeg_frame", ret);
+
     return ff_frame;
 }
 /* }}} */
@@ -157,7 +172,7 @@ static void _php_free_av_frame(AVFrame *av_frame)
 
 /* {{{ _php_free_ffmpeg_frame()
  */
-static void _php_free_ffmpeg_frame(zend_rsrc_list_entry *rsrc TSRMLS_DC)
+static void _php_free_ffmpeg_frame(FFMPEG_RESOURCE *rsrc TSRMLS_DC)
 {
     ff_frame_context *ff_frame = (ff_frame_context*)rsrc->ptr;    
     _php_free_av_frame(ff_frame->av_frame);
@@ -231,26 +246,41 @@ fail:
 
 /* {{{ _php_get_gd_image()
  */
-static int _php_get_gd_image(int w, int h)
+static long _php_get_gd_image(int w, int h)
 {
+#if PHP_MAJOR_VERSION < 7
     zval *function_name, *width, *height;
     zval **argv[2];
-    zend_function *func;
     zval *retval;
+#else
+    zval function_name, width, height;
+    zval argv[2];
+    zval retval;
+#endif
+
+    zend_function *func;
     char *function_cname = "imagecreatetruecolor";
-    int ret;
+    long ret;
     TSRMLS_FETCH();
-   
+
+#if PHP_MAJOR_VERSION < 7   
     if (zend_hash_find(EG(function_table), function_cname, 
                 strlen(function_cname) + 1, (void **)&func) == FAILURE) {
         zend_error(E_ERROR, "Error can't find %s function", function_cname);
     }
+#else
+    if ((func = zend_hash_str_find_ptr(EG(function_table), function_cname,
+                strlen(function_cname))) == NULL) {
+        zend_error(E_ERROR, "Error can't find %s function", function_cname);
+    }
+#endif
 
+#if PHP_MAJOR_VERSION < 7
     MAKE_STD_ZVAL(function_name);
     MAKE_STD_ZVAL(width);
     MAKE_STD_ZVAL(height);
 
-    ZVAL_STRING(function_name, function_cname, 0);
+    FFMPEG_ZVAL_STRING(function_name, function_cname, 0);
     ZVAL_LONG(width, w);
     ZVAL_LONG(height, h);
 
@@ -261,11 +291,11 @@ static int _php_get_gd_image(int w, int h)
                 &retval, 2, argv, 0, NULL TSRMLS_CC) == FAILURE) {
         zend_error(E_ERROR, "Error calling %s function", function_cname);
     }
-    
+
     FREE_ZVAL(function_name); 
     FREE_ZVAL(width); 
     FREE_ZVAL(height); 
-    
+
     if (!retval || retval->type != IS_RESOURCE) {
         php_error_docref(NULL TSRMLS_CC, E_ERROR,
                 "Error creating GD Image");
@@ -276,6 +306,29 @@ static int _php_get_gd_image(int w, int h)
     if (retval) {
         zval_ptr_dtor(&retval);
     }
+
+#else
+    FFMPEG_ZVAL_STRING(&function_name, function_cname, 0);
+    ZVAL_LONG(&width, w);
+    ZVAL_LONG(&height, h);
+
+    argv[0] = width;
+    argv[1] = height;
+
+    if (call_user_function_ex(EG(function_table), NULL, &function_name, 
+                &retval, 2, argv, 0, NULL TSRMLS_CC) == FAILURE) {
+        zend_error(E_ERROR, "Error calling %s function", function_cname);
+    }
+
+    if (Z_TYPE(retval) != IS_RESOURCE) {
+        php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                "Error creating GD Image");
+    }
+
+    ret = retval.value.lval;
+    Z_ADDREF_P(&retval);
+    zval_ptr_dtor(&retval);
+#endif
 
     return ret;
 }
@@ -343,14 +396,23 @@ FFMPEG_PHP_METHOD(ffmpeg_frame, toGDImage)
     return_value->value.lval = _php_get_gd_image(ff_frame->width, 
             ff_frame->height);
 
+#if PHP_MAJOR_VERSION < 7
     return_value->type = IS_RESOURCE;
-
     FFMPEG_PHP_FETCH_IMAGE_RESOURCE(gd_img, &return_value);
+#else
+    FFMPEG_PHP_FETCH_IMAGE_RESOURCE(gd_img, return_value);
+#endif
+
 
     if (_php_avframe_to_gd_image(ff_frame->av_frame, gd_img,
             ff_frame->width, ff_frame->height)) {
         zend_error(E_ERROR, "failed to convert frame to gd image");
     }
+
+#if PHP_MAJOR_VERSION >= 7
+    RETURN_RES(Z_PTR_P(return_value));
+#endif
+
 }
 /* }}} */
 
@@ -380,11 +442,18 @@ FFMPEG_PHP_METHOD(ffmpeg_frame, toGDImage)
  */
 FFMPEG_PHP_METHOD(ffmpeg_frame, ffmpeg_frame)
 {
+#if PHP_MAJOR_VERSION < 7
     zval **argv[1];
+    long ret;
+#else
+    zval argv[1];
+    zend_resource *ret;
+#endif
+
     AVFrame *frame;
     gdImage *gd_img;
     ff_frame_context *ff_frame;
-    int width, height, ret;
+    int width, height;
 
     if (ZEND_NUM_ARGS() != 1) {
         WRONG_PARAM_COUNT;
@@ -398,21 +467,35 @@ FFMPEG_PHP_METHOD(ffmpeg_frame, ffmpeg_frame)
 
     ff_frame = _php_alloc_ff_frame();
     
-	ret = ZEND_REGISTER_RESOURCE(NULL, ff_frame, le_ffmpeg_frame);
+    ret = FFMPEG_REGISTER_RESOURCE(NULL, ff_frame, le_ffmpeg_frame);
     
+#if PHP_MAJOR_VERSION < 7
     object_init_ex(getThis(), ffmpeg_frame_class_entry_ptr);
+#endif
+
     add_property_resource(getThis(), "ffmpeg_frame", ret);
-    
+
+#if PHP_MAJOR_VERSION < 7    
     switch (Z_TYPE_PP(argv[0])) {
+#else
+    switch (Z_TYPE(argv[0])) {
+#endif
         case IS_STRING:
+#if PHP_MAJOR_VERSION < 7    
             convert_to_string_ex(argv[0]);
+#else
+            convert_to_string_ex(&argv[0]);
+#endif
             zend_error(E_ERROR, 
                   "Creating an ffmpeg_frame from a file is not implemented\n");
             //_php_read_frame_from_file(ff_frame, Z_STRVAL_PP(argv[0]));
             break;
         case IS_RESOURCE:
+#if PHP_MAJOR_VERSION < 7    
             FFMPEG_PHP_FETCH_IMAGE_RESOURCE(gd_img, argv[0]);
-
+#else
+            FFMPEG_PHP_FETCH_IMAGE_RESOURCE(gd_img, &argv[0]);
+#endif
             if (!gd_img->trueColor) {
                 php_error_docref(NULL TSRMLS_CC, E_ERROR,
                         "First parameter must be a truecolor gd image.");

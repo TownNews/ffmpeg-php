@@ -52,6 +52,19 @@
 #define FFMPEG_PHP_MALIAS(a,b,c,d,e) PHP_MALIAS(a,b,c,d,e)
 #endif
 
+
+#if PHP_MAJOR_VERSION < 7
+#define FFMPEG_ZVAL_STRING(zv, str, persist) ZVAL_STRING(zv, str, persist)
+#define FFMPEG_REGISTER_RESOURCE(result, ptr, type) ZEND_REGISTER_RESOURCE(result, ptr, type)
+#define FFMPEG_RESOURCE zend_rsrc_list_entry
+#define FFMPEG_RETURN_STRINGL(str, len, persist) RETURN_STRINGL(str, len, persist)
+#else
+#define FFMPEG_ZVAL_STRING(zv, str, persist) ZVAL_STRING(zv, str)
+#define FFMPEG_REGISTER_RESOURCE(result, ptr, type) zend_register_resource(ptr, type)
+#define FFMPEG_RESOURCE zend_resource
+#define FFMPEG_RETURN_STRINGL(str, len, persist) RETURN_STRINGL(str, len)
+#endif
+
 #define SAFE_STRING(s) ((s)?(s):"")
 
 #ifndef safe_emalloc
