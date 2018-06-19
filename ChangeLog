@@ -1,5 +1,9 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
+version 0.9.0 (6/19/2018)
+   Changes:
+   * Updated with PHP 7.2 support (contributed by dward)
+
 version 0.8.0 (11/16/2017)
    Changes:
    * Modified to compile and work with FFMPEG 3.4.0 (#1)
