@@ -104,6 +104,8 @@ PHP_MINIT_FUNCTION(ffmpeg)
 	if (INI_BOOL("ffmpeg.max_alloc")) {
 		av_max_alloc(INI_INT("ffmpeg.max_alloc"));
 	}
+
+	avformat_network_init();
    
     register_ffmpeg_movie_class(module_number);
     register_ffmpeg_frame_class(module_number);
@@ -131,6 +133,8 @@ PHP_MINIT_FUNCTION(ffmpeg)
  */
 PHP_MSHUTDOWN_FUNCTION(ffmpeg)
 {
+	avformat_network_deinit();
+
     // TODO: Free any remaining persistent movies here?
     
     UNREGISTER_INI_ENTRIES();
