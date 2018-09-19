@@ -43,6 +43,7 @@
 #include <libavformat/avformat.h>
 #include <libavutil/pixfmt.h>
 #include <libavutil/pixdesc.h>
+#include <libavutil/imgutils.h>
 
 #include "php_ffmpeg.h"
 
@@ -171,7 +172,7 @@ static int _php_get_stream_index(AVFormatContext *fmt_ctx, int type)
     
     for (i = 0; i < fmt_ctx->nb_streams; i++) {
         if (fmt_ctx->streams[i] && 
-                GET_CODEC_FIELD(fmt_ctx->streams[i]->codec, codec_type) == type) {
+                GET_CODEC_FIELD(fmt_ctx->streams[i]->codecpar, codec_type) == type) {
             return i;
         }
     }
@@ -219,7 +220,12 @@ static int has_video(ff_movie_context *ffmovie_ctx) {
  */
 static char* _php_get_filename(ff_movie_context *ffmovie_ctx)
 {
+#if FF_API_FORMAT_FILENAME
+	return ffmovie_ctx->fmt_ctx->url;
+#else
     return ffmovie_ctx->fmt_ctx->filename;
+#endif
+
 }
 /* }}} */
 
@@ -393,7 +399,6 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, __construct)
         if ((le = zend_hash_str_find_ptr(&EG(persistent_list), hashkey, 
                     hashkey_length)) != NULL) {
 #endif
-            int type;
 
 #if PHP_MAJOR_VERSION < 7
             if (Z_TYPE_P(le) != le_ffmpeg_pmovie) {
@@ -408,6 +413,7 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, __construct)
             /* sanity check to ensure that the resource is still a valid 
              * regular resource number */
 #if PHP_MAJOR_VERSION < 7
+            int type;
             if (zend_list_find(ffmovie_ctx->rsrc_id, &type) == ffmovie_ctx) {
                 /* add a reference to the persistent movie */
                 zend_list_addref(ffmovie_ctx->rsrc_id);
@@ -600,7 +606,7 @@ static AVCodecContext* _php_get_decoder_context(ff_movie_context *ffmovie_ctx,
       
         /* find the decoder */
         decoder = avcodec_find_decoder(GET_CODEC_FIELD(
-                    ffmovie_ctx->fmt_ctx->streams[stream_index]->codec, 
+                    ffmovie_ctx->fmt_ctx->streams[stream_index]->codecpar, 
                     codec_id));
 
         if (!decoder) {
@@ -908,11 +914,11 @@ static float _php_get_framerate(ff_movie_context *ffmovie_ctx)
     }
 
 #if LIBAVCODEC_BUILD > 4753 
-    if (GET_CODEC_FIELD(st->codec, codec_type) == AVMEDIA_TYPE_VIDEO){
+    if (GET_CODEC_FIELD(st->codecpar, codec_type) == AVMEDIA_TYPE_VIDEO){
         if (st->r_frame_rate.den && st->r_frame_rate.num) {
             rate = av_q2d(st->r_frame_rate);
         } else {
-            rate = 1 / av_q2d(GET_CODEC_FIELD(st->codec, time_base));
+            rate = 1 / av_q2d(st->time_base);
         }
     }
     return (float)rate;
@@ -988,7 +994,7 @@ static int _php_get_framewidth(ff_movie_context *ffmovie_ctx)
       return 0;
     }
  
-    return GET_CODEC_FIELD(st->codec, width);
+    return GET_CODEC_FIELD(st->codecpar, width);
 }
 /* }}} */
 
@@ -1016,7 +1022,7 @@ static int _php_get_frameheight(ff_movie_context *ffmovie_ctx)
       return 0;
     }
  
-    return GET_CODEC_FIELD(st->codec, height);
+    return GET_CODEC_FIELD(st->codecpar, height);
 }
 /* }}} */
 
@@ -1170,6 +1176,7 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, hasVideo)
 static const char* _php_get_codec_name(ff_movie_context *ffmovie_ctx, int type)
 {
     AVCodecContext *decoder_ctx = NULL;
+    const AVCodecDescriptor *codesc = NULL;
     AVCodec *p = NULL;
     const char *codec_name;
     char buf1[32];
@@ -1180,6 +1187,7 @@ static const char* _php_get_codec_name(ff_movie_context *ffmovie_ctx, int type)
     }
 
     p = avcodec_find_decoder(decoder_ctx->codec_id);
+    codesc = avcodec_descriptor_get(decoder_ctx->codec_id);
 
     /* Copied from libavcodec/utils.c::avcodec_string */
     if (p) {
@@ -1195,8 +1203,8 @@ static const char* _php_get_codec_name(ff_movie_context *ffmovie_ctx, int type)
     } else if (decoder_ctx->codec_id == AV_CODEC_ID_MPEG2TS) {
         /* fake mpeg2 transport stream codec (currently not registered) */
         codec_name = "mpeg2ts";
-    } else if (decoder_ctx->codec_name[0] != '\0') {
-        codec_name = decoder_ctx->codec_name;
+    } else if (codesc) {
+        codec_name = codesc->name;
     } else {
         /* output avi tags */
         if (decoder_ctx->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -1437,7 +1445,7 @@ static AVFrame* _php_read_av_frame(ff_movie_context *ffmovie_ctx,
     int video_stream;
     AVPacket packet;
     AVFrame *frame = NULL;
-    int got_frame; 
+    int got_frame, used;
 
     video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, 
             AVMEDIA_TYPE_VIDEO);
@@ -1456,7 +1464,24 @@ static AVFrame* _php_read_av_frame(ff_movie_context *ffmovie_ctx,
         if (packet.stream_index == video_stream) {
         
 #if LIBAVFORMAT_VERSION_INT > AV_VERSION_INT(52, 31, 0)
-            avcodec_decode_video2(decoder_ctx, frame, &got_frame, &packet);
+#if 0
+     // FIXME: this function can crash with bad packets
+     used = avcodec_decode_video2(decoder_ctx, frame, &got_frame, &packet);
+#else
+         if (decoder_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
+             decoder_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
+             used = avcodec_send_packet(decoder_ctx, &packet);
+             if (used < 0 && used != AVERROR(EAGAIN) && used != AVERROR_EOF) {
+            } else {
+             if (used >= 0)
+                 packet.size = 0;
+             used = avcodec_receive_frame(decoder_ctx, frame);
+             if (used >= 0)
+                 got_frame = 1;
+             }
+         }
+#endif
+
 #else
             avcodec_decode_video(decoder_ctx, frame, &got_frame,
                     packet.data, packet.size);
@@ -1571,6 +1596,9 @@ static int _php_get_ff_frame(ff_movie_context *ffmovie_ctx,
     int64_t pts;
     AVFrame *frame = NULL;
     ff_frame_context *ff_frame;
+
+    uint8_t *video_dst_data[4] = {NULL};
+    int video_dst_linesize[4];
  
     frame = _php_get_av_frame(ffmovie_ctx, wanted_frame, &is_keyframe, &pts);
     if (frame) { 
@@ -1600,15 +1628,33 @@ static int _php_get_ff_frame(ff_movie_context *ffmovie_ctx,
 #endif
 
 
+#if 0
         avpicture_alloc((AVPicture*)ff_frame->av_frame, ff_frame->pixel_format,
             ff_frame->width, ff_frame->height);
- 
+
         /* FIXME: temporary hack until I figure out how to pass new buffers 
          *        to the decoder 
          */
         av_picture_copy((AVPicture*)ff_frame->av_frame, 
                         (AVPicture*)frame, ff_frame->pixel_format,
                 ff_frame->width, ff_frame->height);
+
+#else
+
+		int ret = av_image_alloc(ff_frame->av_frame->data,
+            ff_frame->av_frame->linesize, ff_frame->width, ff_frame->height,
+            ff_frame->pixel_format, 1);
+
+        if (ret < 0) {
+           memset(ff_frame->av_frame->data, 0, sizeof(AVPicture));
+        }
+
+        av_image_copy(video_dst_data, video_dst_linesize, 
+           (const uint8_t **)ff_frame->av_frame->data, ff_frame->av_frame->linesize,
+           ff_frame->pixel_format, ff_frame->width, ff_frame->height);
+
+#endif
+ 
 
         return 1;
     } else {

@@ -47,6 +47,9 @@
 #include "ffmpeg_frame.h"
 #include "ffmpeg_tools.h"
 
+#include <libavutil/imgutils.h>
+
+
 /* 
    include gd header from local include dir. This is a copy of gd.h that is 
    distributed with php-5.2.5. It is distributed along with ffmpeg-php to
@@ -220,8 +223,20 @@ int _php_convert_frame(ff_frame_context *ff_frame_ctx, int dst_fmt) {
 #endif
 
 
+#if 0
     avpicture_alloc((AVPicture*)dst_frame, dst_fmt, ff_frame_ctx->width,
             ff_frame_ctx->height);
+#else
+    int ret = av_image_alloc(dst_frame->data,
+            dst_frame->linesize, ff_frame_ctx->width, ff_frame_ctx->height,
+            dst_fmt, 1);
+
+        if (ret < 0) {
+           memset(dst_frame->data, 0, sizeof(AVPicture));
+        }
+
+
+#endif
 
     result = ffmpeg_img_convert((AVPicture*)dst_frame, dst_fmt, 
                 (AVPicture *)src_frame, 
@@ -510,7 +525,18 @@ FFMPEG_PHP_METHOD(ffmpeg_frame, ffmpeg_frame)
 #else
             frame = avcodec_alloc_frame();
 #endif
+
+#if 0
             avpicture_alloc((AVPicture*)frame, AV_PIX_FMT_RGB32, width, height);
+#else
+            if (av_image_alloc(frame->data, frame->linesize, width,
+                             height, AV_PIX_FMT_RGB32, 1) < 0) {
+
+                memset(frame->data, 0, sizeof(AVPicture));
+
+            }
+
+#endif
 
             /* copy the gd image to the av_frame */
             _php_gd_image_to_avframe(gd_img, frame, width, height);
