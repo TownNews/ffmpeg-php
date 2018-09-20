@@ -84,7 +84,7 @@ PHP_INI_BEGIN()
     PHP_INI_ENTRY("ffmpeg.allow_persistent", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("ffmpeg.show_warnings", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("ffmpeg.max_alloc", "0", PHP_INI_SYSTEM, NULL)
-	PHP_INI_ENTRY("ffmpeg.threads", "1", PHP_INI_SYSTEM, NULL)
+    PHP_INI_ENTRY("ffmpeg.threads", "1", PHP_INI_SYSTEM, NULL)
 PHP_INI_END()
 
 
@@ -93,7 +93,9 @@ PHP_INI_END()
 PHP_MINIT_FUNCTION(ffmpeg)
 {
     /* register all codecs */
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
     av_register_all();
+#endif
     
     REGISTER_INI_ENTRIES();
  
@@ -101,11 +103,11 @@ PHP_MINIT_FUNCTION(ffmpeg)
         av_log_set_callback(ffmpeg_errorhandler);
     } 
 
-	if (INI_BOOL("ffmpeg.max_alloc")) {
-		av_max_alloc(INI_INT("ffmpeg.max_alloc"));
-	}
+    if (INI_BOOL("ffmpeg.max_alloc")) {
+        av_max_alloc(INI_INT("ffmpeg.max_alloc"));
+    }
 
-	avformat_network_init();
+    avformat_network_init();
    
     register_ffmpeg_movie_class(module_number);
     register_ffmpeg_frame_class(module_number);
@@ -133,7 +135,7 @@ PHP_MINIT_FUNCTION(ffmpeg)
  */
 PHP_MSHUTDOWN_FUNCTION(ffmpeg)
 {
-	avformat_network_deinit();
+    avformat_network_deinit();
 
     // TODO: Free any remaining persistent movies here?
     
