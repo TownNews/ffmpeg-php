@@ -420,7 +420,12 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, __construct)
 #else
             if(ffmovie_ctx->rsrc_id->ptr == ffmovie_ctx) {
                 /* add a reference to the persistent movie */
+#if PHP_MINOR_VERSION >= 3
+                GC_ADDREF(ffmovie_ctx->rsrc_id);
+#else
                 GC_REFCOUNT(ffmovie_ctx->rsrc_id)++;
+#endif
+
 #endif
 
             } else {
