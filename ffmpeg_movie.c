@@ -1450,7 +1450,7 @@ static AVFrame* _php_read_av_frame(ff_movie_context *ffmovie_ctx,
     int video_stream;
     AVPacket packet;
     AVFrame *frame = NULL;
-    int got_frame, used;
+    int got_frame; 
 
     video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, 
             AVMEDIA_TYPE_VIDEO);
@@ -1469,24 +1469,7 @@ static AVFrame* _php_read_av_frame(ff_movie_context *ffmovie_ctx,
         if (packet.stream_index == video_stream) {
         
 #if LIBAVFORMAT_VERSION_INT > AV_VERSION_INT(52, 31, 0)
-#if 0
-     // FIXME: this function can crash with bad packets
-     used = avcodec_decode_video2(decoder_ctx, frame, &got_frame, &packet);
-#else
-         if (decoder_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
-             decoder_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
-             used = avcodec_send_packet(decoder_ctx, &packet);
-             if (used < 0 && used != AVERROR(EAGAIN) && used != AVERROR_EOF) {
-            } else {
-             if (used >= 0)
-                 packet.size = 0;
-             used = avcodec_receive_frame(decoder_ctx, frame);
-             if (used >= 0)
-                 got_frame = 1;
-             }
-         }
-#endif
-
+            avcodec_decode_video2(decoder_ctx, frame, &got_frame, &packet);
 #else
             avcodec_decode_video(decoder_ctx, frame, &got_frame,
                     packet.data, packet.size);
