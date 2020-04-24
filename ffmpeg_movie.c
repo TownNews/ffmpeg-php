@@ -1450,7 +1450,7 @@ static AVFrame* _php_read_av_frame(ff_movie_context *ffmovie_ctx,
     int video_stream;
     AVPacket packet;
     AVFrame *frame = NULL;
-    int got_frame, used;
+    int got_frame; 
 
     video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, 
             AVMEDIA_TYPE_VIDEO);
@@ -1469,24 +1469,7 @@ static AVFrame* _php_read_av_frame(ff_movie_context *ffmovie_ctx,
         if (packet.stream_index == video_stream) {
         
 #if LIBAVFORMAT_VERSION_INT > AV_VERSION_INT(52, 31, 0)
-#if 0
-     // FIXME: this function can crash with bad packets
-     used = avcodec_decode_video2(decoder_ctx, frame, &got_frame, &packet);
-#else
-         if (decoder_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
-             decoder_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
-             used = avcodec_send_packet(decoder_ctx, &packet);
-             if (used < 0 && used != AVERROR(EAGAIN) && used != AVERROR_EOF) {
-            } else {
-             if (used >= 0)
-                 packet.size = 0;
-             used = avcodec_receive_frame(decoder_ctx, frame);
-             if (used >= 0)
-                 got_frame = 1;
-             }
-         }
-#endif
-
+            avcodec_decode_video2(decoder_ctx, frame, &got_frame, &packet);
 #else
             avcodec_decode_video(decoder_ctx, frame, &got_frame,
                     packet.data, packet.size);
@@ -1602,9 +1585,6 @@ static int _php_get_ff_frame(ff_movie_context *ffmovie_ctx,
     AVFrame *frame = NULL;
     ff_frame_context *ff_frame;
 
-    uint8_t *video_dst_data[4] = {NULL};
-    int video_dst_linesize[4];
- 
     frame = _php_get_av_frame(ffmovie_ctx, wanted_frame, &is_keyframe, &pts);
     if (frame) { 
         /*
@@ -1633,7 +1613,6 @@ static int _php_get_ff_frame(ff_movie_context *ffmovie_ctx,
 #endif
 
 
-#if 0
         avpicture_alloc((AVPicture*)ff_frame->av_frame, ff_frame->pixel_format,
             ff_frame->width, ff_frame->height);
 
@@ -1643,23 +1622,6 @@ static int _php_get_ff_frame(ff_movie_context *ffmovie_ctx,
         av_picture_copy((AVPicture*)ff_frame->av_frame, 
                         (AVPicture*)frame, ff_frame->pixel_format,
                 ff_frame->width, ff_frame->height);
-
-#else
-
-		int ret = av_image_alloc(ff_frame->av_frame->data,
-            ff_frame->av_frame->linesize, ff_frame->width, ff_frame->height,
-            ff_frame->pixel_format, 1);
-
-        if (ret < 0) {
-           memset(ff_frame->av_frame->data, 0, sizeof(AVPicture));
-        }
-
-        av_image_copy(video_dst_data, video_dst_linesize, 
-           (const uint8_t **)ff_frame->av_frame->data, ff_frame->av_frame->linesize,
-           ff_frame->pixel_format, ff_frame->width, ff_frame->height);
-
-#endif
- 
 
         return 1;
     } else {
