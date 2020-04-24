@@ -1602,9 +1602,6 @@ static int _php_get_ff_frame(ff_movie_context *ffmovie_ctx,
     AVFrame *frame = NULL;
     ff_frame_context *ff_frame;
 
-    uint8_t *video_dst_data[4] = {NULL};
-    int video_dst_linesize[4];
- 
     frame = _php_get_av_frame(ffmovie_ctx, wanted_frame, &is_keyframe, &pts);
     if (frame) { 
         /*
@@ -1633,7 +1630,6 @@ static int _php_get_ff_frame(ff_movie_context *ffmovie_ctx,
 #endif
 
 
-#if 0
         avpicture_alloc((AVPicture*)ff_frame->av_frame, ff_frame->pixel_format,
             ff_frame->width, ff_frame->height);
 
@@ -1643,23 +1639,6 @@ static int _php_get_ff_frame(ff_movie_context *ffmovie_ctx,
         av_picture_copy((AVPicture*)ff_frame->av_frame, 
                         (AVPicture*)frame, ff_frame->pixel_format,
                 ff_frame->width, ff_frame->height);
-
-#else
-
-		int ret = av_image_alloc(ff_frame->av_frame->data,
-            ff_frame->av_frame->linesize, ff_frame->width, ff_frame->height,
-            ff_frame->pixel_format, 1);
-
-        if (ret < 0) {
-           memset(ff_frame->av_frame->data, 0, sizeof(AVPicture));
-        }
-
-        av_image_copy(video_dst_data, video_dst_linesize, 
-           (const uint8_t **)ff_frame->av_frame->data, ff_frame->av_frame->linesize,
-           ff_frame->pixel_format, ff_frame->width, ff_frame->height);
-
-#endif
- 
 
         return 1;
     } else {
