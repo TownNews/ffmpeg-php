@@ -34,6 +34,10 @@ dnl      PHP_ADD_INCLUDE($i/include/libavdevice/)
 		FFMPEG_INC_FOUND=$i/include
       break
     fi
+    dnl Debian x86_64 support
+    if test -f $i/include/x86_64-linux-gnu/libavcodec/avcodec.h; then
+      FFMPEG_INC_FOUND=$i/include/x86_64-linux-gnu
+    fi
   done
 
   if test -z "$FFMPEG_INC_FOUND"; then 
@@ -53,6 +57,10 @@ dnl      PHP_ADD_INCLUDE($i/include/libavdevice/)
     dnl PATCH: 1785450 x86_64 support (Bent Nagstrup Terp)
     if test -f $i/lib64/libavcodec.so; then
       FFMPEG_LIBDIR=$i/lib64
+    fi
+    dnl Debian x86_64 support
+    if test -f $i/lib/x86_64-linux-gnu/libavcodec.so; then
+      FFMPEG_LIBDIR=$i/lib/x86_64-linux-gnu
     fi
     dnl MacOS-X support (Alexey Zakhlestin)
     if test -f $i/lib/libavcodec.dylib; then
